@@ -94,4 +94,16 @@ class Application extends Container
             return null;
         }
     }
+
+    /**
+     * Get absolute path related to project root.
+     *
+     * @param  string|null $to
+     *
+     * @return  string
+     */
+    public function path($to = null): string
+    {
+        return $this->basePath . ($to ? DIRECTORY_SEPARATOR . $to : $to);
+    }
 }
