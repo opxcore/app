@@ -1,0 +1,28 @@
+{
+  "name": "opxcore/app",
+  "description": "The OpxCore Framework.",
+  "keywords": [
+    "opxcore"
+  ],
+  "license": "MIT",
+  "type": "library",
+  "require": {
+    "php": "^7.1.3",
+    "opxcore/interfaces": "dev-master",
+    "opxcore/container": "^0.3.0",
+    "opxcore/config": "^0.2.0"
+  },
+  "require-dev": {
+  },
+  "autoload": {
+    "files": [
+    ],
+    "psr-4": {
+      "OpxCore\\App": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+    }
+  }
+}
