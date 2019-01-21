@@ -42,22 +42,28 @@ class Application extends Container
      * Application constructor.
      *
      * @param  string|null $basePath
-     *
-     * @throws  \OpxCore\Container\Exceptions\ContainerException
-     * @throws  \OpxCore\Container\Exceptions\NotFoundException
      */
     public function __construct($basePath = null)
     {
         // Apply paths configurations.
         $this->setBasePaths($basePath);
 
-        // Load environment variables
-        ConfigEnvironment::load($this->envPath, $this->envFile);
-
         // Bind container.
         static::setContainer($this);
         $this->instance('app', $this);
         $this->instance(Container::class, $this);
+    }
+
+    /**
+     * Init application.
+     *
+     * @throws \OpxCore\Container\Exceptions\ContainerException
+     * @throws \OpxCore\Container\Exceptions\NotFoundException
+     */
+    public function init(): void
+    {
+        // Load environment variables
+        ConfigEnvironment::load($this->envPath, $this->envFile);
 
         // Load config files.
         $this->loadConfig();
