@@ -2,38 +2,59 @@
 
 namespace OpxCore\App;
 
-use OpxCore\Config\Config;
 use OpxCore\Container\Container;
+use OpxCore\Config\ConfigEnvironment;
+use OpxCore\Interfaces\ConfigInterface;
+use OpxCore\Interfaces\ConfigCacheRepositoryInterface;
+use OpxCore\Interfaces\ConfigRepositoryInterface;
 
 class Application extends Container
 {
     /**
-     * Base application directory.
+     * Base application path.
      *
      * @var  string
      */
     protected $basePath;
 
     /**
-     * Config files directory.
+     * Environment file path.
      *
      * @var  string
      */
-    protected $configPath;
+    protected $envPath = '/';
+
+    /**
+     * Environment filename.
+     *
+     * @var  string
+     */
+    protected $envFile = '.env';
+
+    /**
+     * Config files path.
+     *
+     * @var  string
+     */
+    protected $configPath = 'config';
 
     /**
      * Application constructor.
      *
      * @param  string|null $basePath
      *
-     * @return  void
+     * @throws  \OpxCore\Container\Exceptions\ContainerException
+     * @throws  \OpxCore\Container\Exceptions\NotFoundException
      */
     public function __construct($basePath = null)
     {
         // Apply paths configurations.
         $this->setBasePaths($basePath);
 
-        // Base bindings for container.
+        // Load environment variables
+        ConfigEnvironment::load($this->envPath, $this->envFile);
+
+        // Bind container.
         static::setContainer($this);
         $this->instance('app', $this);
         $this->instance(Container::class, $this);
@@ -61,38 +82,10 @@ class Application extends Container
     {
         $this->basePath = rtrim($basePath, '\/');
 
-        $this->configPath = $this->basePath . DIRECTORY_SEPARATOR . 'config';
+        $this->configPath = $this->path($this->configPath);
+        $this->envPath = $this->path($this->configPath);
 
         return $this;
-    }
-
-    /**
-     * Load configuration files for application and instance config.
-     */
-    public function loadConfig(): void
-    {
-        $config = new Config($this->basePath, $this->configPath, $this->configPath);
-
-        $this->instance('config', $config);
-    }
-
-    /**
-     * Get config.
-     *
-     * @param  array|string|int|null $key
-     * @param  mixed|null $default
-     *
-     * @return  \OpxCore\Config\Config|mixed|null
-     */
-    public function config($key = null, $default = null)
-    {
-        try {
-            /** @var Config $config */
-            $config = $this->make('config');
-            return $key ? $config->get($key, $default) : $config;
-        } catch (\Exception $exception) {
-            return null;
-        }
     }
 
     /**
@@ -106,4 +99,77 @@ class Application extends Container
     {
         return $this->basePath . ($to ? DIRECTORY_SEPARATOR . $to : $to);
     }
+
+    /**
+     * Load configuration files for application and instance config.
+     *
+     * @param  string $profile Profile name to load config for
+     * @param  bool $force Skip cache
+     *
+     * @throws  \OpxCore\Container\Exceptions\ContainerException
+     * @throws  \OpxCore\Container\Exceptions\NotFoundException
+     */
+    public function loadConfig($profile = 'default', $force = false): void
+    {
+        $config = [];
+        $loaded = false;
+
+        // Try to load config from cache first if this option is enabled and driver
+        // for config cache was bind.
+        if (!$force && (env('CONFIG_CACHE_DISABLE', false) === false) && $this->has(ConfigCacheRepositoryInterface::class)) {
+
+            /** @var \OpxCore\Interfaces\ConfigCacheRepositoryInterface $cacheDriver */
+            $cacheDriver = $this->make(ConfigCacheRepositoryInterface::class);
+
+            $loaded = $cacheDriver->load($config, $profile);
+
+            // In this case cache enabled and cache driver exists, but config was not cached.
+            $makeCache = !$loaded;
+        }
+
+        // The second we try lo create config loader if it was bind and config was not
+        // already loaded from cache.
+        if (!$loaded && $this->has(ConfigRepositoryInterface::class)) {
+
+            /** @var \OpxCore\Interfaces\ConfigRepositoryInterface $configDriver */
+            $configDriver = $this->make(ConfigRepositoryInterface::class);
+
+            $loaded = $configDriver->load($config, $profile);
+
+            // Conditionally make cache for config
+            if ($loaded && isset($makeCache, $cacheDriver)) {
+
+                $cacheDriver->save($config, $profile);
+            }
+        }
+
+        /** @var \OpxCore\Interfaces\ConfigInterface $config */
+        $config = $this->make(ConfigInterface::class, ['config' => $config]);
+
+        $this->instance('config', $config);
+    }
+
+    /**
+     * Get config.
+     *
+     * @param  array|string|int|null $key
+     * @param  \Closure|mixed|null $default
+     *
+     * @return  \OpxCore\Interfaces\ConfigInterface|mixed|null
+     */
+    public function config($key = null, $default = null)
+    {
+        try {
+            /** @var \OpxCore\Interfaces\ConfigInterface $config */
+            $config = $this->make('config');
+
+            return $key ? $config->get($key, $default) : $config;
+
+        } catch (\Exception $exception) {
+
+            return $default instanceof \Closure ? $default() : $default;
+        }
+    }
+
+
 }

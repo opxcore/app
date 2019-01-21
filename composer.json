@@ -8,9 +8,9 @@
   "type": "library",
   "require": {
     "php": "^7.1.3",
-    "opxcore/interfaces": "0.1.x-dev",
+    "opxcore/interfaces": "dev-master",
     "opxcore/container": "^0.3.0",
-    "opxcore/config": "^0.2.0"
+    "opxcore/config-environment": "dev-master"
   },
   "require-dev": {
   },
@@ -25,9 +25,6 @@
     "psr-4": {
     }
   },
-  "extra": {
-    "branch-alias": {
-      "dev-master": "0.1.x-dev"
-    }
-  }
+  "prefer-stable": true,
+  "minimum-stability": "dev"
 }
