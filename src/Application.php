@@ -5,8 +5,6 @@ namespace OpxCore\App;
 use OpxCore\Container\Container;
 use OpxCore\Config\ConfigEnvironment;
 use OpxCore\Interfaces\ConfigInterface;
-use OpxCore\Interfaces\ConfigCacheRepositoryInterface;
-use OpxCore\Interfaces\ConfigRepositoryInterface;
 
 class Application extends Container
 {
@@ -89,7 +87,7 @@ class Application extends Container
         $this->basePath = rtrim($basePath, '\/');
 
         $this->configPath = $this->path($this->configPath);
-        $this->envPath = $this->path($this->configPath);
+        $this->envPath = $this->path($this->envPath);
 
         return $this;
     }
