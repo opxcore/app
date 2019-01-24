@@ -115,42 +115,12 @@ class Application extends Container
      * @throws  \OpxCore\Container\Exceptions\ContainerException
      * @throws  \OpxCore\Container\Exceptions\NotFoundException
      */
-    public function loadConfig($profile = 'default', $force = false): void
+    public function loadConfig($profile = null, $force = false): void
     {
-        $config = [];
-        $loaded = false;
-
-        // Try to load config from cache first if this option is enabled and driver
-        // for config cache was bind.
-        if (!$force && (env('CONFIG_CACHE_DISABLE', false) === false) && $this->has(ConfigCacheRepositoryInterface::class)) {
-
-            /** @var \OpxCore\Interfaces\ConfigCacheRepositoryInterface $cacheDriver */
-            $cacheDriver = $this->make(ConfigCacheRepositoryInterface::class);
-
-            $loaded = $cacheDriver->load($config, $profile);
-
-            // In this case cache enabled and cache driver exists, but config was not cached.
-            $makeCache = !$loaded;
-        }
-
-        // The second we try lo create config loader if it was bind and config was not
-        // already loaded from cache.
-        if (!$loaded && $this->has(ConfigRepositoryInterface::class)) {
-
-            /** @var \OpxCore\Interfaces\ConfigRepositoryInterface $configDriver */
-            $configDriver = $this->make(ConfigRepositoryInterface::class);
-
-            $loaded = $configDriver->load($config, $profile);
-
-            // Conditionally make cache for config
-            if ($loaded && isset($makeCache, $cacheDriver)) {
-
-                $cacheDriver->save($config, $profile);
-            }
-        }
-
         /** @var \OpxCore\Interfaces\ConfigInterface $config */
-        $config = $this->make(ConfigInterface::class, ['config' => $config]);
+        $config = $this->make(ConfigInterface::class);
+
+        $config->load($profile, $force);
 
         $this->instance('config', $config);
     }
