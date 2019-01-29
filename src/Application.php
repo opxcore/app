@@ -5,6 +5,7 @@ namespace OpxCore\App;
 use OpxCore\Container\Container;
 use OpxCore\Config\ConfigEnvironment;
 use OpxCore\Interfaces\ConfigInterface;
+use OpxCore\Interfaces\LogManagerInterface;
 
 class Application extends Container
 {
@@ -65,6 +66,9 @@ class Application extends Container
 
         // Load config files.
         $this->loadConfig();
+
+        // Bind logger
+        $this->registerLogger();
     }
 
     /**
@@ -145,5 +149,31 @@ class Application extends Container
         }
     }
 
+    /**
+     * Register logger.
+     *
+     * @throws  \OpxCore\Container\Exceptions\ContainerException
+     * @throws  \OpxCore\Container\Exceptions\NotFoundException
+     */
+    public function registerLogger(): void
+    {
+        $config = $this->config('log');
 
+        $logger = $this->make(LogManagerInterface::class, $config);
+
+        $this->instance('log', $logger);
+    }
+
+    /**
+     * Get log manager instance.
+     *
+     * @return  \OpxCore\Interfaces\LogManagerInterface
+     *
+     * @throws  \OpxCore\Container\Exceptions\ContainerException
+     * @throws  \OpxCore\Container\Exceptions\NotFoundException
+     */
+    public function log(): LogManagerInterface
+    {
+        return $this->make('log');
+    }
 }
