@@ -1,6 +1,6 @@
 <?php
 
-if (! function_exists('app')) {
+if (!function_exists('app')) {
     /**
      * Get application instance.
      *
