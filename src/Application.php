@@ -132,7 +132,7 @@ class Application extends Container
     {
         $config = $this->config('log');
 
-        $logger = $this->make(LogManager::class, $config);
+        $logger = $this->make(LogManager::class, ['config' => $config]);
 
         $this->instance('log', $logger);
     }
