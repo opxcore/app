@@ -2,10 +2,10 @@
 
 namespace OpxCore\App;
 
+use OpxCore\Config\Config;
 use OpxCore\Container\Container;
 use OpxCore\Config\ConfigEnvironment;
-use OpxCore\Interfaces\ConfigInterface;
-use OpxCore\Interfaces\LogManagerInterface;
+use OpxCore\Log\LogManager;
 
 class Application extends Container
 {
@@ -54,39 +54,13 @@ class Application extends Container
     }
 
     /**
-     * Init application.
+     * Set base paths for application.
      *
-     * @throws \OpxCore\Container\Exceptions\ContainerException
-     * @throws \OpxCore\Container\Exceptions\NotFoundException
-     */
-    public function init(): void
-    {
-        // Load environment variables
-        ConfigEnvironment::load($this->envPath, $this->envFile);
-
-        // Load config files.
-        $this->loadConfig();
-
-        // Bind logger
-        $this->registerLogger();
-    }
-
-    /**
-     * Run application.
-     *
-     * @return void
-     */
-    public function run(): void
-    {
-
-    }
-
-    /**
-     * @param $basePath
+     * @param  string $basePath
      *
      * @return  $this
      */
-    public function setBasePaths($basePath): self
+    protected function setBasePaths($basePath): self
     {
         $this->basePath = rtrim($basePath, '\/');
 
@@ -109,18 +83,39 @@ class Application extends Container
     }
 
     /**
-     * Load configuration files for application and instance config.
+     * Init application.
+     *
+     * @throws \OpxCore\Container\Exceptions\ContainerException
+     * @throws \OpxCore\Container\Exceptions\NotFoundException
+     */
+    public function init(): void
+    {
+        // Load environment variables
+        ConfigEnvironment::load($this->envPath, $this->envFile);
+
+        // Create configuration loader and perform loading of configs.
+        $this->initConfig();
+
+        // Create logger
+        $this->initLogger();
+    }
+
+    /**
+     * Create configuration for application using dependency injection, load config
+     * and instance handler. Notice: ConfigCacheRepositoryInterface::class and
+     * ConfigRepositoryInterface::class are resolved from container. They must
+     * be bind before calling this method.
      *
      * @param  string $profile Profile name to load config for
-     * @param  bool $force Skip cache
+     * @param  bool $force Skip loading config from cache driver
      *
      * @throws  \OpxCore\Container\Exceptions\ContainerException
      * @throws  \OpxCore\Container\Exceptions\NotFoundException
      */
-    public function loadConfig($profile = null, $force = false): void
+    protected function initConfig($profile = null, $force = false): void
     {
-        /** @var \OpxCore\Interfaces\ConfigInterface $config */
-        $config = $this->make(ConfigInterface::class);
+        /** @var \OpxCore\Config\Config $config */
+        $config = $this->make(Config::class);
 
         $config->load($profile, $force);
 
@@ -128,12 +123,27 @@ class Application extends Container
     }
 
     /**
-     * Get config.
+     * Register logger.
+     *
+     * @throws  \OpxCore\Container\Exceptions\ContainerException
+     * @throws  \OpxCore\Container\Exceptions\NotFoundException
+     */
+    protected function initLogger(): void
+    {
+        $config = $this->config('log');
+
+        $logger = $this->make(LogManager::class, $config);
+
+        $this->instance('log', $logger);
+    }
+
+    /**
+     * Get configuration for given key or config handler if null given.
      *
      * @param  array|string|int|null $key
      * @param  \Closure|mixed|null $default
      *
-     * @return  \OpxCore\Interfaces\ConfigInterface|mixed|null
+     * @return  \OpxCore\Config\Config|mixed|null
      */
     public function config($key = null, $default = null)
     {
@@ -150,30 +160,39 @@ class Application extends Container
     }
 
     /**
-     * Register logger.
+     * Run application.
      *
-     * @throws  \OpxCore\Container\Exceptions\ContainerException
-     * @throws  \OpxCore\Container\Exceptions\NotFoundException
+     * @return void
      */
-    public function registerLogger(): void
+    public function run(): void
     {
-        $config = $this->config('log');
 
-        $logger = $this->make(LogManagerInterface::class, $config);
-
-        $this->instance('log', $logger);
     }
 
     /**
-     * Get log manager instance.
+     * Get log driver or log manager instance.
      *
-     * @return  \OpxCore\Interfaces\LogManagerInterface
+     * @param  string|null $driver
+     *
+     * @return  \OpxCore\Log\LogManager|\Psr\Log\LoggerInterface
      *
      * @throws  \OpxCore\Container\Exceptions\ContainerException
      * @throws  \OpxCore\Container\Exceptions\NotFoundException
+     * @throws  \OpxCore\Log\Exceptions\LogManagerException
      */
-    public function log(): LogManagerInterface
+    public function log($driver = null)
     {
-        return $this->make('log');
+        /** @var \OpxCore\Log\LogManager $logger */
+        $logger = $this->make('log');
+
+        if ($driver === null) {
+            return $logger;
+        }
+
+        if (method_exists($logger, 'driver')) {
+            return $logger->driver($driver);
+        }
+
+        return $logger;
     }
 }
