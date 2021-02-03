@@ -2,17 +2,27 @@
   "name": "opxcore/app",
   "description": "The OpxCore Application.",
   "keywords": [
-    "opxcore"
+    "opxcore",
+    "application"
   ],
   "license": "MIT",
   "type": "library",
+  "homepage": "https://opxcore.com",
+  "support": {
+    "issues": "https://github.com/opxcore/config/issues",
+    "source": "https://github.com/opxcore/config"
+  },
+  "authors": [
+    {
+      "name": "Lozovoy Vyacheslav",
+      "email": "opxcore@gmail.com"
+    }
+  ],
   "require": {
-    "php": "^7.1.3",
-    "opxcore/interfaces": "^0.1",
-    "opxcore/container": "^0.3.2",
-    "opxcore/config-environment": "^0.1",
-    "opxcore/config": "^0.2",
-    "opxcore/log-manager": "^1.2"
+    "php": "^7.4",
+    "opxcore/container-interface": "^1.0.4",
+    "opxcore/config-interface": "^1.0.1",
+    "opxcore/log-interface": "^1.0.8"
   },
   "require-dev": {
   },
