@@ -3,7 +3,9 @@
 namespace OpxCore\App;
 
 use OpxCore\Config\Interfaces\ConfigInterface;
+use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
+use OpxCore\Container\Interfaces\NotFoundExceptionInterface;
 use OpxCore\Log\Interfaces\LoggerInterface;
 
 class Application
@@ -50,5 +52,35 @@ class Application
     public function path($to = null): string
     {
         return $this->basePath . ($to ? DIRECTORY_SEPARATOR . $to : $to);
+    }
+
+    /**
+     * Initialize application dependencies.
+     *
+     * @return  void
+     *
+     * @throws  ContainerExceptionInterface
+     * @throws  NotFoundExceptionInterface
+     */
+    public function init(): void
+    {
+        // Resolve, initialize and load config.
+        // Config repository, cache and environment drivers are resolved from container and must be bound outside
+        // application in bootstrap file.
+        // If configuration interfaces were not bound, container will throw exception.
+        /** @var ConfigInterface $config */
+        $config = $this->container->make(ConfigInterface::class);
+        $config->load();
+        $this->container->instance('config', $config);
+    }
+
+    /**
+     * Get application config.
+     *
+     * @return  ConfigInterface
+     */
+    public function config(): ConfigInterface
+    {
+        return $this->container->make('config');
     }
 }
