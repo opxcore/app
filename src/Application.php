@@ -25,6 +25,9 @@ class Application
     /** @var bool Is profiling enabled */
     protected bool $profilingEnabled = true;
 
+    /** @var bool Is application run in debug mode */
+    protected bool $debug = false;
+
     /**
      * Application constructor.
      *
@@ -126,6 +129,9 @@ class Application
         $config = $this->container->make(ConfigInterface::class);
         $config->load();
         $this->container->instance('config', $config);
+
+        // Set some parameters loaded with config
+        $this->debug = $config->get('app.debug', false);
 
         $this->profiling('app.init.finish');
     }
