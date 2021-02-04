@@ -57,7 +57,7 @@ class Application
      *
      * @return  array|null
      */
-    public function profiling(?string $action, ?int $time = null, ?int $memory = null): ?array
+    public function profiling(?string $action = null, ?int $time = null, ?int $memory = null): ?array
     {
         if ($action === null) {
             return $this->profiling;
