@@ -141,4 +141,28 @@ class Application
 
         return $this->container->make('config');
     }
+
+    /**
+     * Get logger.
+     *
+     * @return  \Psr\Log\LoggerInterface
+     */
+    public function logger(): \Psr\Log\LoggerInterface
+    {
+        $this->profiling('app.logger.get');
+
+        if ($this->container->has('logger')) {
+            return $this->container->make('logger');
+        }
+
+        $this->profiling('app.logger.make.start');
+
+        $logger = $this->container->make(LoggerInterface::class);
+
+        $this->container->instance('logger', $logger);
+
+        $this->profiling('app.logger.make.end');
+
+        return $logger;
+    }
 }
