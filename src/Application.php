@@ -19,18 +19,25 @@ class Application
     /** @var array Profiling application */
     protected array $profiling = [];
 
-    /** @var float Timestamp of application start */
-    protected float $startTime;
+    /** @var int Timestamp of application start */
+    protected int $startTime;
 
     /**
      * Application constructor.
      *
      * @param ContainerInterface $container
      * @param string $basePath
+     *
+     * @return  void
      */
     public function __construct(ContainerInterface $container, string $basePath)
     {
-        $this->startTime = hrtime(true);
+        $this->startTime = constant('OPXCORE_START') ?? hrtime(true);
+
+        if (defined('OPXCORE_START')) {
+            $this->profiling('system start', $this->startTime, constant('OPXCORE_START_MEM'));
+        }
+
         $this->profiling('app.constructor start');
 
         $this->setBasePath($basePath);
@@ -45,10 +52,12 @@ class Application
      * Write action to profiling or get whole profiling list.
      *
      * @param string|null $action
+     * @param int|null $time
+     * @param int|null $memory
      *
      * @return  array|null
      */
-    public function profiling(?string $action): ?array
+    public function profiling(?string $action, ?int $time = null, ?int $memory = null): ?array
     {
         if ($action === null) {
             return $this->profiling;
@@ -56,8 +65,8 @@ class Application
 
         $this->profiling[] = [
             'action' => $action,
-            'time' => hrtime(true) - $this->startTime,
-            'memory' => memory_get_usage(true)
+            'time' => $time ?? ((int)hrtime(true) - $this->startTime),
+            'memory' => $memory ?? memory_get_usage(true)
         ];
 
         return null;
