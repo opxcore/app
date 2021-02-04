@@ -57,7 +57,7 @@ class Application
      * @param int|null $time
      * @param int|null $memory
      *
-     * @return  array|null
+     * @return null|array[]
      */
     public function profiling(?string $action = null, ?int $time = null, ?int $memory = null): ?array
     {
