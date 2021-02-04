@@ -22,6 +22,9 @@ class Application
     /** @var int Timestamp of application start */
     protected int $startTime;
 
+    /** @var bool Is profiling enabled */
+    protected bool $profilingEnabled = true;
+
     /**
      * Application constructor.
      *
@@ -35,10 +38,10 @@ class Application
         $this->startTime = constant('OPXCORE_START') ?? hrtime(true);
 
         if (defined('OPXCORE_START')) {
-            $this->profiling('system start', 0, constant('OPXCORE_START_MEM'));
-            $this->profiling('app.constructor start');
+            $this->profiling('system.start', 0, constant('OPXCORE_START_MEM'));
+            $this->profiling('app.constructor.start');
         } else {
-            $this->profiling('app.constructor start', 0);
+            $this->profiling('app.constructor.start', 0);
         }
 
 
@@ -47,7 +50,7 @@ class Application
         $this->container = $container;
         $this->container->instance('app', $this);
 
-        $this->profiling('app.constructor finish');
+        $this->profiling('app.constructor.finish');
     }
 
     /**
@@ -61,6 +64,10 @@ class Application
      */
     public function profiling(?string $action = null, ?int $time = null, ?int $memory = null): ?array
     {
+        if ($this->profilingEnabled === false) {
+            return null;
+        }
+
         if ($action === null) {
             return $this->profiling;
         }
@@ -68,7 +75,7 @@ class Application
         $this->profiling[] = [
             'action' => $action,
             'time' => $time ?? ((int)hrtime(true) - $this->startTime),
-            'memory' => $memory ?? memory_get_usage(true)
+            'memory' => $memory ?? memory_get_usage()
         ];
 
         return null;
@@ -109,7 +116,7 @@ class Application
      */
     public function init(): void
     {
-        $this->profiling('app.init start');
+        $this->profiling('app.init.start');
 
         // Resolve, initialize and load config.
         // Config repository, cache and environment drivers are resolved from container and must be bound outside
@@ -120,7 +127,7 @@ class Application
         $config->load();
         $this->container->instance('config', $config);
 
-        $this->profiling('app.init finish');
+        $this->profiling('app.init.finish');
     }
 
     /**
@@ -130,7 +137,7 @@ class Application
      */
     public function config(): ConfigInterface
     {
-        $this->profiling('app.config get');
+        $this->profiling('app.config.get');
 
         return $this->container->make('config');
     }
