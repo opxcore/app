@@ -36,9 +36,11 @@ class Application
 
         if (defined('OPXCORE_START')) {
             $this->profiling('system start', 0, constant('OPXCORE_START_MEM'));
+            $this->profiling('app.constructor start');
+        } else {
+            $this->profiling('app.constructor start', 0);
         }
 
-        $this->profiling('app.constructor start', 0);
 
         $this->setBasePath($basePath);
 
