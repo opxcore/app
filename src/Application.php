@@ -35,10 +35,10 @@ class Application
         $this->startTime = constant('OPXCORE_START') ?? hrtime(true);
 
         if (defined('OPXCORE_START')) {
-            $this->profiling('system start', $this->startTime, constant('OPXCORE_START_MEM'));
+            $this->profiling('system start', 0, constant('OPXCORE_START_MEM'));
         }
 
-        $this->profiling('app.constructor start');
+        $this->profiling('app.constructor start', 0);
 
         $this->setBasePath($basePath);
 
