@@ -10,6 +10,7 @@
 
 namespace OpxCore\App;
 
+use OpxCore\App\Interfaces\AppBootstrapperInterface;
 use OpxCore\App\Interfaces\AppInterface;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
@@ -23,7 +24,7 @@ class Application implements AppInterface
     protected string $basePath;
 
     /** @var ContainerInterface|null Bound container */
-    protected ?ContainerInterface $container;
+    protected ContainerInterface $container;
 
     /** @var array Profiling application */
     protected array $profiling = [];
@@ -36,6 +37,9 @@ class Application implements AppInterface
 
     /** @var bool Is profiling enabled */
     protected bool $profilingEnabled = true;
+
+    /** @var bool Is application bootstrapped */
+    protected bool $bootstrapped = false;
 
     /** @var bool Is application run in debug mode */
     protected bool $debug = false;
@@ -142,9 +146,9 @@ class Application implements AppInterface
     /**
      * Get container registered in application.
      *
-     * @return  ContainerInterface|null
+     * @return  ContainerInterface
      */
-    public function container(): ?ContainerInterface
+    public function container(): ContainerInterface
     {
         return $this->container;
     }
@@ -173,6 +177,16 @@ class Application implements AppInterface
     {
         $this->profilingEnd('app.get_path');
         return $this->basePath . ($to ? DIRECTORY_SEPARATOR . $to : $to);
+    }
+
+    /**
+     * Weaver the application is in debug mode.
+     *
+     * @return  bool
+     */
+    public function isDebugMode(): bool
+    {
+        return $this->debug;
     }
 
     /**
@@ -212,6 +226,28 @@ class Application implements AppInterface
         // Register basic error handler
 
         $this->profilingEnd('app.init');
+    }
+
+    /**
+     * Bootstrap application.
+     *
+     * @return  void
+     */
+    public function bootstrap(): void
+    {
+        $this->profilingStart('app.bootstrap');
+
+        $bootstrappers = $this->config()->get('bootstrappers', []);
+
+        foreach ($bootstrappers as $bootstrapper) {
+            /** @var AppBootstrapperInterface $bootstrapper */
+            $bootstrapper = $this->container()->make($bootstrapper);
+            $bootstrapper->bootstrap($this);
+        }
+
+        $this->bootstrapped = true;
+
+        $this->profilingEnd('app.bootstrap');
     }
 
     /**

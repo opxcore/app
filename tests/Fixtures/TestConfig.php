@@ -14,7 +14,12 @@ use OpxCore\Config\Interfaces\ConfigInterface;
 
 class TestConfig implements ConfigInterface
 {
-    public array $config = [];
+    public array $config = [
+        'app.debug' => true,
+        'bootstrappers' => [
+            TestBootstrapper::class,
+        ]
+    ];
 
     /**
      * @inheritDoc

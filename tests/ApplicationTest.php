@@ -53,6 +53,7 @@ class ApplicationTest extends TestCase
         $app->init();
         $config = $app->config();
         self::assertEquals(TestConfig::class, get_class($config));
+        self::assertTrue($app->isDebugMode());
     }
 
     public function testAppLogger(): void
@@ -65,5 +66,13 @@ class ApplicationTest extends TestCase
 
         $logger = $app->logger();
         self::assertEquals(TestLogger::class, get_class($logger));
+    }
+
+    public function testBootstrapper(): void
+    {
+        $app = new Application($this->container, __DIR__);
+        $app->init();
+        $app->bootstrap();
+        self::assertTrue($app->config()->get('bootstrapped', false));
     }
 }
