@@ -22,8 +22,8 @@ class Application
     /** @var int Timestamp of application start */
     protected int $profilingStartTime;
 
-    /** @var int|null Timestamp of application start */
-    protected ?int $profilingStopWatchStart;
+    /** @var array Timestamp of application start */
+    protected array $profilingStopWatches = [];
 
     /** @var bool Is profiling enabled */
     protected bool $profilingEnabled = true;
@@ -44,7 +44,7 @@ class Application
             return;
         }
 
-        $this->profilingStopWatchStart[$action] = hrtime(true);
+        $this->profilingStopWatches[$action] = hrtime(true);
     }
 
     /**
@@ -54,28 +54,30 @@ class Application
      * @param int|null $time
      * @param int|null $memory
      *
-     * @return null|array[]
+     * @return  void
      */
-    public function profilingEnd(?string $action = null, ?int $time = null, ?int $memory = null): ?array
+    public function profilingEnd(?string $action = null, ?int $time = null, ?int $memory = null): void
     {
         if ($this->profilingEnabled === false) {
-            return null;
-        }
-
-        if ($action === null) {
-            return $this->profiling;
+            return;
         }
 
         $this->profiling[] = [
             'action' => $action,
             'timestamp' => $time ?? ((int)hrtime(true) - $this->profilingStartTime),
-            'time' => $this->profilingStopWatchStart[$action] ? ((int)hrtime(true) - $this->profilingStopWatchStart) : null,
+            'time' => $this->profilingStopWatches[$action] ? ((int)hrtime(true) - $this->profilingStopWatches[$action]) : null,
             'memory' => $memory ?? memory_get_usage()
         ];
 
-        unset($this->profilingStopWatchStart[$action]);
+        unset($this->profilingStopWatches[$action]);
+    }
 
-        return null;
+    /**
+     * @return  array[]|null
+     */
+    public function profiling(): ?array
+    {
+        return $this->profiling;
     }
 
     /**
