@@ -10,13 +10,14 @@
 
 namespace OpxCore\App;
 
+use OpxCore\App\Interfaces\AppInterface;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
 use OpxCore\Container\Interfaces\NotFoundExceptionInterface;
 use OpxCore\Log\Interfaces\LoggerInterface;
 
-class Application
+class Application implements AppInterface
 {
     /** @var string Project root path. */
     protected string $basePath;
