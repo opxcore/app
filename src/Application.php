@@ -20,7 +20,10 @@ class Application
     protected array $profiling = [];
 
     /** @var int Timestamp of application start */
-    protected int $startTime;
+    protected int $profilingStartTime;
+
+    /** @var int|null Timestamp of application start */
+    protected ?int $profilingStopWatchStart;
 
     /** @var bool Is profiling enabled */
     protected bool $profilingEnabled = true;
@@ -29,31 +32,19 @@ class Application
     protected bool $debug = false;
 
     /**
-     * Application constructor.
+     * Start profiling stopwatch.
      *
-     * @param ContainerInterface $container
-     * @param string $basePath
+     * @param string $action
      *
      * @return  void
      */
-    public function __construct(ContainerInterface $container, string $basePath)
+    public function profilingStart(string $action): void
     {
-        $this->startTime = constant('OPXCORE_START') ?? hrtime(true);
-
-        if (defined('OPXCORE_START')) {
-            $this->profiling('system.start', 0, constant('OPXCORE_START_MEM'));
-            $this->profiling('app.constructor.start');
-        } else {
-            $this->profiling('app.constructor.start', 0);
+        if (!$this->profilingEnabled) {
+            return;
         }
 
-
-        $this->setBasePath($basePath);
-
-        $this->container = $container;
-        $this->container->instance('app', $this);
-
-        $this->profiling('app.constructor.finish');
+        $this->profilingStopWatchStart[$action] = hrtime(true);
     }
 
     /**
@@ -65,7 +56,7 @@ class Application
      *
      * @return null|array[]
      */
-    public function profiling(?string $action = null, ?int $time = null, ?int $memory = null): ?array
+    public function profilingEnd(?string $action = null, ?int $time = null, ?int $memory = null): ?array
     {
         if ($this->profilingEnabled === false) {
             return null;
@@ -77,11 +68,41 @@ class Application
 
         $this->profiling[] = [
             'action' => $action,
-            'time' => $time ?? ((int)hrtime(true) - $this->startTime),
+            'timestamp' => $time ?? ((int)hrtime(true) - $this->profilingStartTime),
+            'time' => $this->profilingStopWatchStart[$action] ? ((int)hrtime(true) - $this->profilingStopWatchStart) : null,
             'memory' => $memory ?? memory_get_usage()
         ];
 
+        unset($this->profilingStopWatchStart[$action]);
+
         return null;
+    }
+
+    /**
+     * Application constructor.
+     *
+     * @param ContainerInterface $container
+     * @param string $basePath
+     *
+     * @return  void
+     */
+    public function __construct(ContainerInterface $container, string $basePath)
+    {
+        $this->profilingStart('app.constructor');
+
+        if (!defined('OPXCORE_START')) {
+            $this->profilingStartTime = hrtime(true);
+        } else {
+            $this->profilingStartTime = constant('OPXCORE_START');
+            $this->profilingEnd('system.start', 0, constant('OPXCORE_START_MEM'));
+        }
+
+        $this->setBasePath($basePath);
+
+        $this->container = $container;
+        $this->container->instance('app', $this);
+
+        $this->profilingEnd('app.constructor');
     }
 
     /**
@@ -93,8 +114,8 @@ class Application
      */
     protected function setBasePath(string $basePath): void
     {
+        $this->profilingEnd('app.set_base_path');
         $this->basePath = rtrim($basePath, '\/');
-        $this->profiling('app.setBasePath');
     }
 
     /**
@@ -106,6 +127,7 @@ class Application
      */
     public function path($to = null): string
     {
+        $this->profilingEnd('app.get_path');
         return $this->basePath . ($to ? DIRECTORY_SEPARATOR . $to : $to);
     }
 
@@ -119,21 +141,32 @@ class Application
      */
     public function init(): void
     {
-        $this->profiling('app.init.start');
+        $this->profilingStart('app.init');
 
+        $this->profilingStart('app.init.config.resolve');
         // Resolve, initialize and load config.
         // Config repository, cache and environment drivers are resolved from container and must be bound outside
         // application in bootstrap file.
         // If configuration interfaces were not bound, container will throw exception.
         /** @var ConfigInterface $config */
         $config = $this->container->make(ConfigInterface::class);
+        $this->profilingEnd('app.init.config.resolve');
+
+        $this->profilingStart('app.init.config.load');
         $config->load();
+        $this->profilingEnd('app.init.config.load');
+
+        $this->profilingStart('app.init.config.instancing');
         $this->container->instance('config', $config);
+        $this->profilingEnd('app.init.config.instancing');
 
         // Set some parameters loaded with config
-        $this->debug = $config->get('app.debug', false);
+//        $this->profilingEnd('app.init.error_handler');
+//        $this->debug = $config->get('app.debug', false);
 
-        $this->profiling('app.init.finish');
+        // Register basic error handler
+
+        $this->profilingEnd('app.init');
     }
 
     /**
@@ -143,9 +176,11 @@ class Application
      */
     public function config(): ConfigInterface
     {
-        $this->profiling('app.config.get');
+        $this->profilingStart('app.config.get');
+        $config = $this->container->make('config');
+        $this->profilingEnd('app.config.get');
 
-        return $this->container->make('config');
+        return $config;
     }
 
     /**
@@ -155,19 +190,23 @@ class Application
      */
     public function logger(): \Psr\Log\LoggerInterface
     {
-        $this->profiling('app.logger.get');
+        $this->profilingStart('app.logger.get');
 
         if ($this->container->has('logger')) {
-            return $this->container->make('logger');
+            $logger = $this->container->make('logger');
+            $this->profilingEnd('app.logger.get');
+
+            return $logger;
         }
 
-        $this->profiling('app.logger.make.start');
+        $this->profilingStart('app.logger.make');
 
         $logger = $this->container->make(LoggerInterface::class);
 
         $this->container->instance('logger', $logger);
 
-        $this->profiling('app.logger.make.end');
+        $this->profilingEnd('app.logger.make');
+        $this->profilingEnd('app.logger.get');
 
         return $logger;
     }
