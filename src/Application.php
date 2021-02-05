@@ -13,8 +13,8 @@ class Application
     /** @var string Project root path. */
     protected string $basePath;
 
-    /** @var ContainerInterface Bound container */
-    protected ContainerInterface $container;
+    /** @var ContainerInterface|null Bound container */
+    protected ?ContainerInterface $container;
 
     /** @var array Profiling application */
     protected array $profiling = [];
@@ -80,6 +80,11 @@ class Application
      */
     public function profiling(): ?array
     {
+        // Order profiled items by timestamp first
+        usort($this->profiling, static function ($a, $b) {
+            return $a['timestamp'] <=> $b['timestamp'];
+        });
+
         return $this->profiling;
     }
 
@@ -108,6 +113,16 @@ class Application
         $this->container->instance('app', $this);
 
         $this->profilingEnd('app.constructor');
+    }
+
+    /**
+     * Get container registered in application.
+     *
+     * @return  ContainerInterface|null
+     */
+    public function container(): ?ContainerInterface
+    {
+        return $this->container;
     }
 
     /**
@@ -148,27 +163,28 @@ class Application
     {
         $this->profilingStart('app.init');
 
-        $this->profilingStart('app.init.config.resolve');
         // Resolve, initialize and load config.
         // Config repository, cache and environment drivers are resolved from container and must be bound outside
         // application in bootstrap file.
         // If configuration interfaces were not bound, container will throw exception.
+        $this->profilingStart('app.init.config.resolve');
         /** @var ConfigInterface $config */
         $config = $this->container->make(ConfigInterface::class);
         $this->profilingEnd('app.init.config.resolve');
 
+        // Load configuration files according config realization
         $this->profilingStart('app.init.config.load');
         $config->load();
         $this->profilingEnd('app.init.config.load');
 
+        // Instance config into container for future use
         $this->profilingStart('app.init.config.instancing');
         $this->container->instance('config', $config);
         $this->profilingEnd('app.init.config.instancing');
 
         // Set some parameters loaded with config
+        $this->debug = $config->get('app.debug', false);
 //        $this->profilingEnd('app.init.error_handler');
-//        $this->debug = $config->get('app.debug', false);
-
         // Register basic error handler
 
         $this->profilingEnd('app.init');
@@ -197,6 +213,7 @@ class Application
     {
         $this->profilingStart('app.logger.get');
 
+        // Check for bounded instance of logger in container
         if ($this->container->has('logger')) {
             $logger = $this->container->make('logger');
             $this->profilingEnd('app.logger.get');
@@ -204,13 +221,12 @@ class Application
             return $logger;
         }
 
+        // If there is no registered logger resolve it and bind
         $this->profilingStart('app.logger.make');
-
         $logger = $this->container->make(LoggerInterface::class);
-
         $this->container->instance('logger', $logger);
-
         $this->profilingEnd('app.logger.make');
+
         $this->profilingEnd('app.logger.get');
 
         return $logger;
