@@ -51,19 +51,19 @@ class Application
      * Write action to profiling or get whole profiling list.
      *
      * @param string|null $action
-     * @param int|null $time
+     * @param int|null $timestamp
      * @param int|null $memory
      *
      * @return  void
      */
-    public function profilingEnd(?string $action = null, ?int $time = null, ?int $memory = null): void
+    public function profilingEnd(?string $action = null, ?int $timestamp = null, ?int $memory = null): void
     {
         if ($this->profilingEnabled === false) {
             return;
         }
 
-        $executionTime = $this->profilingStopWatches[$action] ? ((int)hrtime(true) - $this->profilingStopWatches[$action]) : null;
-        $timeStamp = $time ?? ((int)hrtime(true) - $this->profilingStartTime - $executionTime ?? 0);
+        $executionTime = array_key_exists($action, $this->profilingStopWatches) ? ((int)hrtime(true) - $this->profilingStopWatches[$action]) : null;
+        $timeStamp = $timestamp ?? ((int)hrtime(true) - $this->profilingStartTime - $executionTime ?? 0);
 
         $this->profiling[] = [
             'action' => $action,
@@ -76,10 +76,25 @@ class Application
     }
 
     /**
+     * Returns profiling list or set profiling mode.
+     *
+     * @param bool|null $enable
+     *
      * @return  array[]|null
      */
-    public function profiling(): ?array
+    public function profiling(?bool $enable = null): ?array
     {
+        // If parameter is bool set profiling mode
+        if (is_bool($enable)) {
+            $this->profilingEnabled = $enable;
+
+            return null;
+        }
+
+        if (!$this->profilingEnabled) {
+            return null;
+        }
+
         // Order profiled items by timestamp first
         usort($this->profiling, static function ($a, $b) {
             return $a['timestamp'] <=> $b['timestamp'];
@@ -104,7 +119,7 @@ class Application
             $this->profilingStartTime = hrtime(true);
         } else {
             $this->profilingStartTime = constant('OPXCORE_START');
-            $this->profilingEnd('system.start', 0, constant('OPXCORE_START_MEM'));
+            $this->profilingEnd('system.start', 0, @constant('OPXCORE_START_MEM'));
         }
 
         $this->setBasePath($basePath);
