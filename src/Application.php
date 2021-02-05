@@ -62,10 +62,13 @@ class Application
             return;
         }
 
+        $executionTime = $this->profilingStopWatches[$action] ? ((int)hrtime(true) - $this->profilingStopWatches[$action]) : null;
+        $timeStamp = $time ?? ((int)hrtime(true) - $this->profilingStartTime - $executionTime ?? 0);
+
         $this->profiling[] = [
             'action' => $action,
-            'timestamp' => $time ?? ((int)hrtime(true) - $this->profilingStartTime),
-            'time' => $this->profilingStopWatches[$action] ? ((int)hrtime(true) - $this->profilingStopWatches[$action]) : null,
+            'timestamp' => $timeStamp,
+            'time' => $executionTime,
             'memory' => $memory ?? memory_get_usage()
         ];
 
