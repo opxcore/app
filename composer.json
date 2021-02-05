@@ -20,9 +20,9 @@
   ],
   "require": {
     "php": "^7.4",
-    "opxcore/container-interface": "^1.0.4",
+    "opxcore/container-interface": "^1.0.5",
     "opxcore/config-interface": "^1.0.1",
-    "opxcore/log-interface": "^1.0.8"
+    "opxcore/log-interface": "^1.0.9"
   },
   "require-dev": {
   },
