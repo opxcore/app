@@ -78,11 +78,15 @@ class Application implements AppInterface
         $executionTime = array_key_exists($action, $this->profilingStopWatches) ? ((int)hrtime(true) - $this->profilingStopWatches[$action]) : null;
         $timeStamp = $timestamp ?? ((int)hrtime(true) - $this->profilingStartTime - $executionTime ?? 0);
 
+        $stack = debug_backtrace();
+        array_shift($stack);
+
         $this->profiling[] = [
             'action' => $action,
             'timestamp' => $timeStamp,
             'time' => $executionTime,
-            'memory' => $memory ?? memory_get_usage()
+            'memory' => $memory ?? memory_get_usage(),
+            'stack' => $stack,
         ];
 
         unset($this->profilingStopWatches[$action]);
