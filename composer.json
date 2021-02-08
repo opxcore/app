@@ -9,8 +9,8 @@
   "type": "library",
   "homepage": "https://opxcore.com",
   "support": {
-    "issues": "https://github.com/opxcore/config/issues",
-    "source": "https://github.com/opxcore/config"
+    "issues": "https://github.com/opxcore/app/issues",
+    "source": "https://github.com/opxcore/app"
   },
   "authors": [
     {
