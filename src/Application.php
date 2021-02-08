@@ -224,10 +224,9 @@ class Application implements AppInterface
         $this->container->instance('config', $config);
         $this->profilingEnd('app.init.config.instancing');
 
-        // Set some parameters loaded with config
+        // Set some parameters loaded with config (or default)
         $this->debug = $config->get('app.debug', false);
-//        $this->profilingEnd('app.init.error_handler');
-        // Register basic error handler
+        $this->profilingEnabled = $config->get('app.profiling', false);
 
         $this->profilingEnd('app.init');
     }
