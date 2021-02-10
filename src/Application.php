@@ -46,21 +46,20 @@ class Application implements AppInterface
      */
     public function __construct(ContainerInterface $container, string $basePath)
     {
+        // Capture time and memory usage for profiler
+        $timestamp = hrtime(true);
+        $memory = memory_get_usage();
+
         // Create profiler proxy. This will enable calls to profiling not worrying about it was set
         $this->profiler = new AppProfilerProxy;
 
         // Resolve and create profiler
         if ($container->has(ProfilerInterface::class)) {
-
-            $profiler = $container->make(ProfilerInterface::class, [
-                'startTime' => @constant('OPXCORE_START'),
-                'startMem' => @constant('OPXCORE_START_MEM'),
-            ]);
-
+            $profiler = $container->make(ProfilerInterface::class);
             $this->profiler->setProfiler($profiler);
         }
 
-        $this->profiler()->start('app.constructor');
+        $this->profiler()->start('app.constructor', $timestamp, $memory);
 
         $this->setBasePath($basePath);
 
