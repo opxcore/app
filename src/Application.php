@@ -12,6 +12,7 @@ namespace OpxCore\App;
 
 use OpxCore\App\Interfaces\AppBootstrapperInterface;
 use OpxCore\App\Interfaces\AppInterface;
+use OpxCore\App\Interfaces\ProfilerInterface;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
@@ -26,99 +27,14 @@ class Application implements AppInterface
     /** @var ContainerInterface|null Bound container */
     protected ContainerInterface $container;
 
-    /** @var array Profiling application */
-    protected array $profiling = [];
-
-    /** @var int Timestamp of application start */
-    protected int $profilingStartTime;
-
-    /** @var array Timestamp of application start */
-    protected array $profilingStopWatches = [];
-
-    /** @var bool Is profiling enabled */
-    protected bool $profilingEnabled = true;
-
     /** @var bool Is application bootstrapped */
     protected bool $bootstrapped = false;
 
     /** @var bool Is application run in debug mode */
     protected bool $debug = false;
 
-    /**
-     * Start profiling stopwatch.
-     *
-     * @param string $action
-     *
-     * @return  void
-     */
-    public function profilingStart(string $action): void
-    {
-        if (!$this->profilingEnabled) {
-            return;
-        }
-
-        $this->profilingStopWatches[$action] = hrtime(true);
-    }
-
-    /**
-     * Write action to profiling or get whole profiling list.
-     *
-     * @param string|null $action
-     * @param int|null $timestamp
-     * @param int|null $memory
-     *
-     * @return  void
-     */
-    public function profilingEnd(?string $action = null, ?int $timestamp = null, ?int $memory = null): void
-    {
-        if ($this->profilingEnabled === false) {
-            return;
-        }
-
-        $executionTime = array_key_exists($action, $this->profilingStopWatches) ? ((int)hrtime(true) - $this->profilingStopWatches[$action]) : null;
-        $timeStamp = $timestamp ?? ((int)hrtime(true) - $this->profilingStartTime - $executionTime ?? 0);
-
-        $stack = debug_backtrace(0);
-        array_shift($stack);
-
-        $this->profiling[] = [
-            'action' => $action,
-            'timestamp' => $timeStamp,
-            'time' => $executionTime,
-            'memory' => $memory ?? memory_get_usage(),
-            'stack' => $stack,
-        ];
-
-        unset($this->profilingStopWatches[$action]);
-    }
-
-    /**
-     * Returns profiling list or set profiling mode.
-     *
-     * @param bool|null $enable
-     *
-     * @return  array[]|null
-     */
-    public function profiling(?bool $enable = null): ?array
-    {
-        // If parameter is bool set profiling mode
-        if (is_bool($enable)) {
-            $this->profilingEnabled = $enable;
-
-            return null;
-        }
-
-        if (!$this->profilingEnabled) {
-            return null;
-        }
-
-        // Order profiled items by timestamp first
-        usort($this->profiling, static function ($a, $b) {
-            return $a['timestamp'] <=> $b['timestamp'];
-        });
-
-        return $this->profiling;
-    }
+    /** @var ProfilerInterface|null Profiler to use in application */
+    protected ?ProfilerInterface $profiler;
 
     /**
      * Application constructor.
@@ -130,21 +46,28 @@ class Application implements AppInterface
      */
     public function __construct(ContainerInterface $container, string $basePath)
     {
-        $this->profilingStart('app.constructor');
+        // Create profiler proxy. This will enable calls to profiling not worrying about it was set
+        $this->profiler = new AppProfilerProxy;
 
-        if (!defined('OPXCORE_START')) {
-            $this->profilingStartTime = hrtime(true);
-        } else {
-            $this->profilingStartTime = constant('OPXCORE_START');
-            $this->profilingEnd('system.start', 0, @constant('OPXCORE_START_MEM'));
+        // Resolve and create profiler
+        if ($container->has(ProfilerInterface::class)) {
+
+            $profiler = $container->make(ProfilerInterface::class, [
+                'startTime' => @constant('OPXCORE_START'),
+                'startMem' => @constant('OPXCORE_START_MEM'),
+            ]);
+
+            $this->profiler->setProfiler($profiler);
         }
+
+        $this->profiler()->start('app.constructor');
 
         $this->setBasePath($basePath);
 
         $this->container = $container;
         $this->container->instance('app', $this);
 
-        $this->profilingEnd('app.constructor');
+        $this->profiler()->stop('app.constructor');
     }
 
     /**
@@ -166,7 +89,8 @@ class Application implements AppInterface
      */
     protected function setBasePath(string $basePath): void
     {
-        $this->profilingEnd('app.set_base_path');
+        $this->profiler->stop('app.set_base_path');
+
         $this->basePath = rtrim($basePath, '\/');
     }
 
@@ -179,7 +103,8 @@ class Application implements AppInterface
      */
     public function path($to = null): string
     {
-        $this->profilingEnd('app.get_path');
+        $this->profiler->stop('app.get_path');
+
         return $this->basePath . ($to ? DIRECTORY_SEPARATOR . $to : $to);
     }
 
@@ -203,32 +128,32 @@ class Application implements AppInterface
      */
     public function init(): void
     {
-        $this->profilingStart('app.init');
+        $this->profiler()->start('app.init');
 
         // Resolve, initialize and load config.
         // Config repository, cache and environment drivers are resolved from container and must be bound outside
         // application in bootstrap file.
         // If configuration interfaces were not bound, container will throw exception.
-        $this->profilingStart('app.init.config.resolve');
+        $this->profiler()->start('app.init.config.resolve');
         /** @var ConfigInterface $config */
         $config = $this->container->make(ConfigInterface::class);
-        $this->profilingEnd('app.init.config.resolve');
+        $this->profiler()->stop('app.init.config.resolve');
 
         // Load configuration files according config realization
-        $this->profilingStart('app.init.config.load');
+        $this->profiler()->start('app.init.config.load');
         $config->load();
-        $this->profilingEnd('app.init.config.load');
+        $this->profiler()->stop('app.init.config.load');
 
         // Instance config into container for future use
-        $this->profilingStart('app.init.config.instancing');
+        $this->profiler()->start('app.init.config.instancing');
         $this->container->instance('config', $config);
-        $this->profilingEnd('app.init.config.instancing');
+        $this->profiler()->stop('app.init.config.instancing');
 
         // Set some parameters loaded with config (or default)
         $this->debug = $config->get('app.debug', false);
-        $this->profilingEnabled = $config->get('app.profiling', false);
+        $this->profiler()->enable($config->get('app.profiling', false));
 
-        $this->profilingEnd('app.init');
+        $this->profiler()->stop('app.init');
     }
 
     /**
@@ -238,7 +163,7 @@ class Application implements AppInterface
      */
     public function bootstrap(): void
     {
-        $this->profilingStart('app.bootstrap');
+        $this->profiler()->start('app.bootstrap');
 
         $bootstrappers = $this->config()->get('bootstrappers', []);
 
@@ -250,7 +175,7 @@ class Application implements AppInterface
 
         $this->bootstrapped = true;
 
-        $this->profilingEnd('app.bootstrap');
+        $this->profiler()->stop('app.bootstrap');
     }
 
     /**
@@ -260,37 +185,48 @@ class Application implements AppInterface
      */
     public function config(): ConfigInterface
     {
-        $this->profilingStart('app.config.get');
+        $this->profiler()->start('app.config.get');
+
         $config = $this->container->make('config');
-        $this->profilingEnd('app.config.get');
+
+        $this->profiler()->stop('app.config.get');
 
         return $config;
     }
 
     /**
-     * Get logger.
+     * Get profiler proxy with assigned profiler (or not assigned)
+     *
+     * @return  ProfilerInterface
+     */
+    public function profiler(): ProfilerInterface
+    {
+        return $this->profiler;
+    }
+
+    /**
+     * Get logger.s
      *
      * @return  \Psr\Log\LoggerInterface
      */
     public function logger(): \Psr\Log\LoggerInterface
     {
-        $this->profilingStart('app.logger.get');
+        $this->profiler()->start('app.logger.get');
 
         // Check for bounded instance of logger in container
         if ($this->container->has('logger')) {
             $logger = $this->container->make('logger');
-            $this->profilingEnd('app.logger.get');
+            $this->profiler()->stop('app.logger.get');
 
             return $logger;
         }
 
         // If there is no registered logger resolve it and bind
-        $this->profilingStart('app.logger.make');
+        $this->profiler()->start('app.logger.make');
         $logger = $this->container->make(LoggerInterface::class);
         $this->container->instance('logger', $logger);
-        $this->profilingEnd('app.logger.make');
-
-        $this->profilingEnd('app.logger.get');
+        $this->profiler()->stop('app.logger.make');
+        $this->profiler()->stop('app.logger.get');
 
         return $logger;
     }
