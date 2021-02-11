@@ -55,8 +55,14 @@ class Application implements AppInterface
 
         // Resolve and create profiler
         if ($container->has(ProfilerInterface::class)) {
+            $profilerTimestamp = hrtime(true);
+            $profilerMemory = memory_get_usage();
+
             $profiler = $container->make(ProfilerInterface::class);
             $this->profiler->setProfiler($profiler);
+
+            $this->profiler()->start('app.constructor.profiler.resolve', $profilerTimestamp, $profilerMemory);
+            $this->profiler()->stop('app.constructor.profiler.resolve');
         }
 
         $this->profiler()->start('app.constructor', $timestamp, $memory);
