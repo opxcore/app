@@ -21,7 +21,7 @@
   "require": {
     "php": "^7.4",
     "opxcore/app-interface": "^1.0.0",
-    "opxcore/app-profiler-interface": "^1.1.4",
+    "opxcore/profiler-interface": "^1.2.1",
     "opxcore/app-bootstrapper-interface": "^1.0.0",
     "opxcore/container-interface": "^1.0.5",
     "opxcore/config-interface": "^1.0.1",

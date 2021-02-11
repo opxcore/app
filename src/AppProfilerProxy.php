@@ -10,9 +10,9 @@
 
 namespace OpxCore\App;
 
-use OpxCore\App\Interfaces\ProfilerInterface;
+use OpxCore\Profiler\Interfaces\ProfilerInterface;
 
-class AppProfilerProxy implements Interfaces\ProfilerInterface
+class AppProfilerProxy implements ProfilerInterface
 {
     /** @var ProfilerInterface|null Profiler instance to call */
     protected ?ProfilerInterface $profiler = null;
@@ -51,13 +51,21 @@ class AppProfilerProxy implements Interfaces\ProfilerInterface
      * @param string $action Action name is used to display name of entry
      * @param int|null $timestamp Externally captured time
      * @param int|null $memory Externally captured memory usage
+     * @param array|null $stacktrace Externally captured stacktrace
      *
      * @return  void
      */
-    public function stop(string $action, ?int $timestamp = null, ?int $memory = null): void
+    public function stop(string $action, ?int $timestamp = null, ?int $memory = null, ?array $stacktrace = null): void
     {
         if ($this->profiler) {
-            $this->profiler->stop($action, $timestamp, $memory);
+
+            // Capture stack trace and exclude current method call if externally captured stack is not provided.
+            if (($stack = $stacktrace) === null) {
+                $stack = debug_backtrace(0);
+                array_shift($stack);
+            }
+
+            $this->profiler->stop($action, $timestamp, $memory, $stack);
         }
     }
 

@@ -10,13 +10,13 @@
 
 namespace OpxCore\App;
 
-use OpxCore\App\Interfaces\AppBootstrapperInterface;
 use OpxCore\App\Interfaces\AppInterface;
-use OpxCore\App\Interfaces\ProfilerInterface;
+use OpxCore\App\Interfaces\AppBootstrapperInterface;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
 use OpxCore\Container\Interfaces\NotFoundExceptionInterface;
+use OpxCore\Profiler\Interfaces\ProfilerInterface;
 use OpxCore\Log\Interfaces\LoggerInterface;
 
 class Application implements AppInterface
