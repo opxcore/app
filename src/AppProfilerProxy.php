@@ -57,7 +57,7 @@ class AppProfilerProxy implements Interfaces\ProfilerInterface
     public function stop(string $action, ?int $timestamp = null, ?int $memory = null): void
     {
         if ($this->profiler) {
-            $this->profiler->stop($action . $timestamp, $memory);
+            $this->profiler->stop($action, $timestamp, $memory);
         }
     }
 
