@@ -12,39 +12,29 @@ namespace OpxCore\Tests\App;
 
 use OpxCore\App\Application;
 use OpxCore\Container\Container;
+use OpxCore\Profiler\Interfaces\ProfilerInterface;
+use OpxCore\Tests\App\Fixtures\TestProfiler;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationProfilingTest extends TestCase
 {
     public function testAppBasicProfiling(): void
     {
-        $app = new Application(new Container(), __DIR__);
-        $app->profilingStart('test');
-        $app->profilingEnd('test');
-        $profiling = $app->profiling();
-        self::assertEquals('test', array_reverse($profiling)[0]['action']);
+        $container = new Container();
+        $profiler = new TestProfiler();
+        $container->instance(ProfilerInterface::class, $profiler);
+        $app = new Application($container, __DIR__);
 
-        $app->profilingEnd('no_start');
-        $profiling = $app->profiling();
-        self::assertNull(array_reverse($profiling)[0]['time']);
-    }
+        $app->profiler()->start('test');
+        self::assertEquals('OpxCore\Tests\App\Fixtures\TestProfiler::start', $profiler->lastCalled);
 
-    public function testAppSystemStartProfiling(): void
-    {
-        define('OPXCORE_START', hrtime(true));
-        $app = new Application(new Container(), __DIR__);
-        $app->profilingStart('test');
-        $app->profilingEnd('test');
-        $profiling = $app->profiling();
-        self::assertEquals('test', array_reverse($profiling)[0]['action']);
-    }
+        $app->profiler()->stop('test');
+        self::assertEquals('OpxCore\Tests\App\Fixtures\TestProfiler::stop', $profiler->lastCalled);
 
-    public function testAppDisableProfiling(): void
-    {
-        $app = new Application(new Container(), __DIR__);
-        $app->profiling(false);
-        $app->profilingStart('test');
-        $app->profilingEnd('test');
-        self::assertNull($app->profiling());
+        $app->profiler()->enable();
+        self::assertEquals('OpxCore\Tests\App\Fixtures\TestProfiler::enable', $profiler->lastCalled);
+
+        $app->profiler()->profiling();
+        self::assertEquals('OpxCore\Tests\App\Fixtures\TestProfiler::profiling', $profiler->lastCalled);
     }
 }
