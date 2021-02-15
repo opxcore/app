@@ -24,7 +24,7 @@ class Application implements AppInterface
     /** @var string Project root path. */
     protected string $basePath;
 
-    /** @var ContainerInterface|null Bound container */
+    /** @var ContainerInterface Bound container */
     protected ContainerInterface $container;
 
     /** @var bool Is application bootstrapped */
@@ -171,9 +171,11 @@ class Application implements AppInterface
         $bootstrappers = $this->config()->get('bootstrappers', []);
 
         foreach ($bootstrappers as $bootstrapper) {
-            /** @var AppBootstrapperInterface $bootstrapper */
-            $bootstrapper = $this->container()->make($bootstrapper);
-            $bootstrapper->bootstrap($this);
+            $this->profiler()->start('app.bootstrap' . $bootstrapper);
+            /** @var AppBootstrapperInterface $bootstrapperInstance */
+            $bootstrapperInstance = $this->container()->make($bootstrapper);
+            $bootstrapperInstance->bootstrap($this);
+            $this->profiler()->stop('app.bootstrap' . $bootstrapper);
         }
 
         $this->bootstrapped = true;
