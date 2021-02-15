@@ -171,11 +171,11 @@ class Application implements AppInterface
         $bootstrappers = $this->config()->get('bootstrappers', []);
 
         foreach ($bootstrappers as $bootstrapper) {
-            $this->profiler()->start('app.bootstrap' . $bootstrapper);
+            $this->profiler()->start("app.bootstrap.{$bootstrapper}");
             /** @var AppBootstrapperInterface $bootstrapperInstance */
             $bootstrapperInstance = $this->container()->make($bootstrapper);
             $bootstrapperInstance->bootstrap($this);
-            $this->profiler()->stop('app.bootstrap' . $bootstrapper);
+            $this->profiler()->stop("app.bootstrap.{$bootstrapper}");
         }
 
         $this->bootstrapped = true;
