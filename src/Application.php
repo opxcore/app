@@ -36,6 +36,9 @@ class Application implements AppInterface
     /** @var ProfilerInterface|null Profiler to use in application */
     protected ?ProfilerInterface $profiler;
 
+    /** @var int Output mode of application. Used by other services to determine how to format output */
+    protected int $outputMode = self::APP_OUTPUT_HTTP;
+
     /**
      * Application constructor.
      *
@@ -235,4 +238,22 @@ class Application implements AppInterface
 
         return $logger;
     }
+
+    /**
+     * Get application output mode is to be used.
+     *
+     * @param int|null $mode Mode to be set.
+     *
+     * @return  int
+     */
+    public function outputMode(?int $mode): int
+    {
+        if ($mode !== null) {
+            $this->outputMode = $mode;
+        }
+
+        return $this->outputMode;
+    }
+
+
 }
