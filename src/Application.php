@@ -73,6 +73,7 @@ class Application implements AppInterface
 
         $this->container = $container;
         $this->container->instance('app', $this);
+        $this->container->instance(AppInterface::class, $this);
 
         // Register exception handler.
         $this->profiler()->start('app.constructor.handler.register');
@@ -147,7 +148,7 @@ class Application implements AppInterface
             $this->profiler->stop('app.exceptionHandler.resolve');
             return null;
         }
-        $handler = $this->container()->make(ExceptionHandlerInterface::class, [AppInterface::class => $this]);
+        $handler = $this->container()->make(ExceptionHandlerInterface::class);
 
         $this->profiler->stop('app.exceptionHandler.resolve');
 
