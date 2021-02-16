@@ -16,6 +16,7 @@ use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
 use OpxCore\Container\Interfaces\NotFoundExceptionInterface;
+use OpxCore\ExceptionHandler\Interfaces\ExceptionHandlerInterface;
 use OpxCore\Profiler\Interfaces\ProfilerInterface;
 use OpxCore\Log\Interfaces\LoggerInterface;
 
@@ -73,6 +74,15 @@ class Application implements AppInterface
         $this->container = $container;
         $this->container->instance('app', $this);
 
+        // Register exception handler.
+        $this->profiler()->start('app.constructor.handler.register');
+
+        if (($handler = $this->exceptionHandler()) !== null) {
+            $handler->register();
+        }
+
+        $this->profiler()->stop('app.constructor.handler.register');
+
         $this->profiler()->stop('app.constructor');
     }
 
@@ -122,6 +132,26 @@ class Application implements AppInterface
     public function isDebugMode(): bool
     {
         return $this->debug;
+    }
+
+    /**
+     * Get exception handler if it was bound.
+     *
+     * @return  ExceptionHandlerInterface|null
+     */
+    public function exceptionHandler(): ?ExceptionHandlerInterface
+    {
+        $this->profiler->start('app.exceptionHandler.resolve');
+
+        if (!$this->container()->has(ExceptionHandlerInterface::class)) {
+            $this->profiler->stop('app.exceptionHandler.resolve');
+            return null;
+        }
+        $handler = $this->container()->make(ExceptionHandlerInterface::class, [AppInterface::class => $this]);
+
+        $this->profiler->stop('app.exceptionHandler.resolve');
+
+        return $handler;
     }
 
     /**
@@ -176,21 +206,40 @@ class Application implements AppInterface
     {
         $this->profiler()->start('app.bootstrap');
 
+        // If null value passed, just mark application bootstrapped. No need other actions.
         if (is_null($bootstrappers)) {
             $this->bootstrapped = true;
             $this->profiler()->stop('app.bootstrap');
             return;
         }
 
+        // If string passed, load configuration for given key
         if (is_string($bootstrappers)) {
             $bootstrappers = $this->config()->get($bootstrappers, []);
         }
 
-        foreach ($bootstrappers as $bootstrapper) {
+        // Iterate and bootstrap all of bootstrappers
+        foreach ($bootstrappers as $bootstrapper => $dependencies) {
+
+            // Check if bootstrapper was given without dependencies
+            if (is_numeric($bootstrapper)) {
+                $bootstrapper = $dependencies;
+                $dependencies = [];
+            }
+
             $this->profiler()->start("app.bootstrap.{$bootstrapper}");
+
             /** @var AppBootstrapperInterface $bootstrapperInstance */
-            $bootstrapperInstance = $this->container()->make($bootstrapper);
-            $bootstrapperInstance->bootstrap($this);
+            $bootstrapperInstance = $this->container()->make($bootstrapper, $dependencies);
+
+            $shouldBeInstanced = $bootstrapperInstance->bootstrap($this);
+
+            if ($shouldBeInstanced !== null) {
+                foreach ($shouldBeInstanced as $key => $instance) {
+                    $this->container()->instance($key, $instance);
+                }
+            }
+
             $this->profiler()->stop("app.bootstrap.{$bootstrapper}");
         }
 
@@ -216,7 +265,7 @@ class Application implements AppInterface
     }
 
     /**
-     * Get profiler proxy with assigned profiler (or not assigned)
+     * Get profiler proxy with assigned profiler (or not assigned).
      *
      * @return  ProfilerInterface
      */
@@ -226,7 +275,7 @@ class Application implements AppInterface
     }
 
     /**
-     * Get logger.s
+     * Get logger.
      *
      * @return  \Psr\Log\LoggerInterface
      */
