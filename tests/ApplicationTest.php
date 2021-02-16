@@ -15,6 +15,7 @@ use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Container;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Log\Interfaces\LoggerInterface;
+use OpxCore\Tests\App\Fixtures\TestBootstrapper;
 use OpxCore\Tests\App\Fixtures\TestConfig;
 use OpxCore\Tests\App\Fixtures\TestLogger;
 use PHPUnit\Framework\TestCase;
@@ -73,6 +74,22 @@ class ApplicationTest extends TestCase
         $app = new Application($this->container, __DIR__);
         $app->init();
         $app->bootstrap();
+        self::assertTrue($app->config()->get('bootstrapped', false));
+    }
+
+    public function testBootstrapperNull(): void
+    {
+        $app = new Application($this->container, __DIR__);
+        $app->init();
+        $app->bootstrap(null);
+        self::assertFalse($app->config()->get('bootstrapped', false));
+    }
+
+    public function testBootstrapperArray(): void
+    {
+        $app = new Application($this->container, __DIR__);
+        $app->init();
+        $app->bootstrap([TestBootstrapper::class]);
         self::assertTrue($app->config()->get('bootstrapped', false));
     }
 }
