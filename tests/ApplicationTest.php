@@ -75,6 +75,7 @@ class ApplicationTest extends TestCase
         $app->init();
         $app->bootstrap();
         self::assertTrue($app->config()->get('bootstrapped', false));
+        self::assertEquals(TestBootstrapper::class, get_class($app->container()->make('test.bootstrapper')));
     }
 
     public function testBootstrapperNull(): void

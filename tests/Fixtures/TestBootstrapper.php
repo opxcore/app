@@ -15,8 +15,10 @@ use OpxCore\App\Interfaces\AppInterface;
 
 class TestBootstrapper implements AppBootstrapperInterface
 {
-    public function bootstrap(AppInterface $app): void
+    public function bootstrap(AppInterface $app): ?array
     {
         $app->config()->set('bootstrapped', true);
+
+        return ['test.bootstrapper' => $this];
     }
 }
