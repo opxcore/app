@@ -246,7 +246,7 @@ class Application implements AppInterface
      *
      * @return  int
      */
-    public function outputMode(?int $mode): int
+    public function outputMode(?int $mode = null): int
     {
         if ($mode !== null) {
             $this->outputMode = $mode;
