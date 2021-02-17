@@ -26,7 +26,7 @@
     "opxcore/container-interface": "^1.0.5",
     "opxcore/config-interface": "^1.0.1",
     "opxcore/log-interface": "^1.0.9",
-    "opxcore/exception-handler-interface": "dev-main"
+    "opxcore/exception-handler-interface": "^1.0.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5.2",
@@ -38,12 +38,6 @@
       "OpxCore\\Tests\\App\\": "tests/"
     }
   },
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "/storage/opxcore/exception-handler-interface/.git"
-    }
-  ],
   "prefer-stable": true,
   "minimum-stability": "dev"
 }
