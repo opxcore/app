@@ -10,11 +10,13 @@
 
 namespace OpxCore\Tests\App;
 
+use InvalidArgumentException;
 use OpxCore\App\Application;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Container;
 use OpxCore\Tests\App\Fixtures\TestBootstrapper;
 use OpxCore\Tests\App\Fixtures\TestConfig;
+use OpxCore\Tests\App\Fixtures\TestLogger;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationBootstrapTest extends TestCase
@@ -50,5 +52,13 @@ class ApplicationBootstrapTest extends TestCase
         $app->init();
         $app->bootstrap([TestBootstrapper::class]);
         self::assertTrue($app->config()->get('bootstrapped', false));
+    }
+
+    public function testInvalidBootstrapper(): void
+    {
+        $app = new Application($this->container, __DIR__);
+        $app->init();
+        $this->expectException(InvalidArgumentException::class);
+        $app->bootstrap([TestLogger::class]);
     }
 }

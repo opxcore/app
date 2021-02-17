@@ -10,6 +10,7 @@
 
 namespace OpxCore\App;
 
+use InvalidArgumentException;
 use OpxCore\App\Interfaces\AppInterface;
 use OpxCore\App\Interfaces\AppBootstrapperInterface;
 use OpxCore\Config\Interfaces\ConfigInterface;
@@ -232,6 +233,10 @@ class Application implements AppInterface
 
             /** @var AppBootstrapperInterface $bootstrapperInstance */
             $bootstrapperInstance = $this->container()->make($bootstrapper, $dependencies);
+
+            if (!$bootstrapperInstance instanceof AppBootstrapperInterface) {
+                throw new InvalidArgumentException('Bootstrapper should be instance of ' . AppBootstrapperInterface::class);
+            }
 
             $shouldBeInstanced = $bootstrapperInstance->bootstrap($this);
 
