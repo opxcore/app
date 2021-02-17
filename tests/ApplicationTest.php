@@ -12,11 +12,10 @@ namespace OpxCore\Tests\App;
 
 use OpxCore\App\Application;
 use OpxCore\Config\Interfaces\ConfigInterface;
+use OpxCore\Tests\App\Fixtures\TestConfig;
 use OpxCore\Container\Container;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Log\Interfaces\LoggerInterface;
-use OpxCore\Tests\App\Fixtures\TestBootstrapper;
-use OpxCore\Tests\App\Fixtures\TestConfig;
 use OpxCore\Tests\App\Fixtures\TestLogger;
 use PHPUnit\Framework\TestCase;
 
@@ -55,42 +54,5 @@ class ApplicationTest extends TestCase
         $config = $app->config();
         self::assertEquals(TestConfig::class, get_class($config));
         self::assertTrue($app->isDebugMode());
-    }
-
-    public function testAppLogger(): void
-    {
-        $app = new Application($this->container, __DIR__);
-        $app->init();
-
-        $logger = $app->logger();
-        self::assertEquals(TestLogger::class, get_class($logger));
-
-        $logger = $app->logger();
-        self::assertEquals(TestLogger::class, get_class($logger));
-    }
-
-    public function testBootstrapper(): void
-    {
-        $app = new Application($this->container, __DIR__);
-        $app->init();
-        $app->bootstrap();
-        self::assertTrue($app->config()->get('bootstrapped', false));
-        self::assertEquals(TestBootstrapper::class, get_class($app->container()->make('test.bootstrapper')));
-    }
-
-    public function testBootstrapperNull(): void
-    {
-        $app = new Application($this->container, __DIR__);
-        $app->init();
-        $app->bootstrap(null);
-        self::assertFalse($app->config()->get('bootstrapped', false));
-    }
-
-    public function testBootstrapperArray(): void
-    {
-        $app = new Application($this->container, __DIR__);
-        $app->init();
-        $app->bootstrap([TestBootstrapper::class]);
-        self::assertTrue($app->config()->get('bootstrapped', false));
     }
 }
