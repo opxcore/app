@@ -20,7 +20,7 @@ class TestLogger extends AbstractLogger implements LoggerInterface
     /**
      * @inheritDoc
      */
-    public function log($level, $message, array $context = array())
+    public function log($level, $message, array $context = array()): void
     {
         $this->logs[] = ['level' => $level, 'message' => $message, 'context' => $context];
     }

@@ -10,8 +10,9 @@
 
 namespace OpxCore\Tests\App\Fixtures;
 
+use OpxCore\Profiler\Interfaces\ProfilerInterface;
 
-class TestProfiler implements \OpxCore\Profiler\Interfaces\ProfilerInterface
+class TestProfiler implements ProfilerInterface
 {
     /** @var string Last called method */
     public string $lastCalled = '';
