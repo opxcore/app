@@ -235,7 +235,10 @@ class Application implements AppInterface
             $bootstrapperInstance = $this->container()->make($bootstrapper, $dependencies);
 
             if (!$bootstrapperInstance instanceof AppBootstrapperInterface) {
-                throw new InvalidArgumentException('Bootstrapper should be instance of ' . AppBootstrapperInterface::class);
+                throw new InvalidArgumentException(
+                    'Bootstrapper [' . get_class($bootstrapperInstance)
+                    . '] should be instance of ' . AppBootstrapperInterface::class
+                );
             }
 
             $shouldBeInstanced = $bootstrapperInstance->bootstrap($this);
