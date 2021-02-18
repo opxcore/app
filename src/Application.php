@@ -195,10 +195,11 @@ class Application implements AppInterface
     }
 
     /**
-     * Bootstrap application. If null passed to $bootstrappers default
-     * `bootstrappers` config key will be used, or it can be overridden
-     * by passing another string key to use sa config key. If array passed
-     * it will be used as array of bootstrappers.
+     * Bootstrap application.
+     * If null passed to $bootstrappers no bootstrapper would be processed.
+     * Default `bootstrappers` or other string value would be used as key
+     * to get bootstrappers list  from application config.
+     * If array passed, it will be used as array of bootstrappers.
      *
      * @param string|array|null $bootstrappers
      *
@@ -229,7 +230,7 @@ class Application implements AppInterface
                 $dependencies = [];
             }
 
-            $this->profiler()->start("app.bootstrap.{$bootstrapper}");
+            $this->profiler()->start("app.bootstrap: {$bootstrapper}");
 
             /** @var AppBootstrapperInterface $bootstrapperInstance */
             $bootstrapperInstance = $this->container()->make($bootstrapper, $dependencies);
@@ -249,7 +250,7 @@ class Application implements AppInterface
                 }
             }
 
-            $this->profiler()->stop("app.bootstrap.{$bootstrapper}");
+            $this->profiler()->stop("app.bootstrap: {$bootstrapper}");
         }
 
         $this->bootstrapped = true;
