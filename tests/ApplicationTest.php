@@ -16,7 +16,7 @@ use OpxCore\Tests\App\Fixtures\TestConfig;
 use OpxCore\Container\Container;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Log\Interfaces\LoggerInterface;
-use OpxCore\Tests\App\Fixtures\TestLogger;
+use OpxCore\Tests\App\Fixtures\TestLogManager;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationTest extends TestCase
@@ -27,7 +27,7 @@ class ApplicationTest extends TestCase
     {
         $this->container = new Container;
         $this->container->bind(ConfigInterface::class, TestConfig::class);
-        $this->container->bind(LoggerInterface::class, TestLogger::class);
+        $this->container->bind(LoggerInterface::class, TestLogManager::class);
     }
 
     public function testAppBasic(): void

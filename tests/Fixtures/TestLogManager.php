@@ -11,9 +11,11 @@
 namespace OpxCore\Tests\App\Fixtures;
 
 use OpxCore\Log\AbstractLogger;
-use OpxCore\Log\Interfaces\LoggerInterface;
+use OpxCore\Log\Interfaces\LogManagerInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
-class TestLogger extends AbstractLogger implements LoggerInterface
+class TestLogManager extends AbstractLogger implements LogManagerInterface
 {
     public array $logs = [];
 
@@ -23,5 +25,15 @@ class TestLogger extends AbstractLogger implements LoggerInterface
     public function log($level, $message, array $context = array()): void
     {
         $this->logs[] = ['level' => $level, 'message' => $message, 'context' => $context];
+    }
+
+    public function logger($names = null): LoggerInterface
+    {
+        return new NullLogger();
+    }
+
+    public function group($names): LoggerInterface
+    {
+        return new NullLogger();
     }
 }

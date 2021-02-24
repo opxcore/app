@@ -16,7 +16,7 @@ use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Container;
 use OpxCore\Tests\App\Fixtures\TestBootstrapper;
 use OpxCore\Tests\App\Fixtures\TestConfig;
-use OpxCore\Tests\App\Fixtures\TestLogger;
+use OpxCore\Tests\App\Fixtures\TestLogManager;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationBootstrapTest extends TestCase
@@ -59,6 +59,6 @@ class ApplicationBootstrapTest extends TestCase
         $app = new Application($this->container, __DIR__);
         $app->init();
         $this->expectException(InvalidArgumentException::class);
-        $app->bootstrap([TestLogger::class]);
+        $app->bootstrap([TestLogManager::class]);
     }
 }

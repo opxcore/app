@@ -13,9 +13,9 @@ namespace OpxCore\Tests\App;
 use OpxCore\App\Application;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Container;
-use OpxCore\Log\Interfaces\LoggerInterface;
+use OpxCore\Log\Interfaces\LogManagerInterface;
 use OpxCore\Tests\App\Fixtures\TestConfig;
-use OpxCore\Tests\App\Fixtures\TestLogger;
+use OpxCore\Tests\App\Fixtures\TestLogManager;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationLoggerTest extends TestCase
@@ -26,7 +26,7 @@ class ApplicationLoggerTest extends TestCase
     {
         $this->container = new Container;
         $this->container->bind(ConfigInterface::class, TestConfig::class);
-        $this->container->bind(LoggerInterface::class, TestLogger::class);
+        $this->container->bind(LogManagerInterface::class, TestLogManager::class);
     }
 
     public function testAppLogger(): void
@@ -34,10 +34,10 @@ class ApplicationLoggerTest extends TestCase
         $app = new Application($this->container, __DIR__);
         $app->init();
 
-        $logger = $app->logger();
-        self::assertEquals(TestLogger::class, get_class($logger));
+        $logger = $app->log();
+        self::assertEquals(TestLogManager::class, get_class($logger));
 
-        $logger = $app->logger();
-        self::assertEquals(TestLogger::class, get_class($logger));
+        $logger = $app->log();
+        self::assertEquals(TestLogManager::class, get_class($logger));
     }
 }

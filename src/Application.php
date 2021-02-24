@@ -18,8 +18,8 @@ use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
 use OpxCore\Container\Interfaces\NotFoundExceptionInterface;
 use OpxCore\ExceptionHandler\Interfaces\ExceptionHandlerInterface;
+use OpxCore\Log\Interfaces\LogManagerInterface;
 use OpxCore\Profiler\Interfaces\ProfilerInterface;
-use OpxCore\Log\Interfaces\LoggerInterface;
 
 class Application implements AppInterface
 {
@@ -287,9 +287,9 @@ class Application implements AppInterface
     /**
      * Get logger.
      *
-     * @return  \Psr\Log\LoggerInterface
+     * @return  LogManagerInterface
      */
-    public function logger(): \Psr\Log\LoggerInterface
+    public function log(): LogManagerInterface
     {
         $this->profiler()->start('app.logger.get');
 
@@ -303,7 +303,7 @@ class Application implements AppInterface
 
         // If there is no registered logger resolve it and bind
         $this->profiler()->start('app.logger.make');
-        $logger = $this->container->make(LoggerInterface::class);
+        $logger = $this->container->make(LogManagerInterface::class);
         $this->container->instance('logger', $logger);
         $this->profiler()->stop('app.logger.make');
         $this->profiler()->stop('app.logger.get');
