@@ -10,9 +10,8 @@
 
 namespace OpxCore\App;
 
-use InvalidArgumentException;
 use OpxCore\App\Interfaces\AppInterface;
-use OpxCore\App\Interfaces\AppBootstrapperInterface;
+use OpxCore\App\Traits\Bootstraps;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
@@ -23,6 +22,8 @@ use OpxCore\Profiler\Interfaces\ProfilerInterface;
 
 class Application implements AppInterface
 {
+    use Bootstraps;
+
     /** @var string Project root path. */
     protected string $basePath;
 
@@ -195,70 +196,6 @@ class Application implements AppInterface
     }
 
     /**
-     * Bootstrap application.
-     * If null passed to $bootstrappers no bootstrapper would be processed.
-     * Default `bootstrappers` or other string value would be used as key
-     * to get bootstrappers list  from application config.
-     * If array passed, it will be used as array of bootstrappers.
-     *
-     * @param string|array|null $bootstrappers
-     *
-     * @return  void
-     */
-    public function bootstrap($bootstrappers = 'bootstrappers'): void
-    {
-        $this->profiler()->start('app.bootstrap');
-
-        // If null value passed, just mark application bootstrapped. No need other actions.
-        if (is_null($bootstrappers)) {
-            $this->bootstrapped = true;
-            $this->profiler()->stop('app.bootstrap');
-            return;
-        }
-
-        // If string passed, load configuration for given key
-        if (is_string($bootstrappers)) {
-            $bootstrappers = $this->config()->get($bootstrappers, []);
-        }
-
-        // Iterate and bootstrap all of bootstrappers
-        foreach ($bootstrappers as $bootstrapper => $dependencies) {
-
-            // Check if bootstrapper was given without dependencies
-            if (is_numeric($bootstrapper)) {
-                $bootstrapper = $dependencies;
-                $dependencies = [];
-            }
-
-            $this->profiler()->start("app.bootstrap: {$bootstrapper}");
-
-            /** @var AppBootstrapperInterface $bootstrapperInstance */
-            $bootstrapperInstance = $this->container()->make($bootstrapper, $dependencies);
-
-            if (!$bootstrapperInstance instanceof AppBootstrapperInterface) {
-                throw new InvalidArgumentException(
-                    'Bootstrapper [' . get_class($bootstrapperInstance)
-                    . '] should be instance of ' . AppBootstrapperInterface::class
-                );
-            }
-
-            $shouldBeInstanced = $bootstrapperInstance->bootstrap($this);
-
-            if ($shouldBeInstanced !== null) {
-                foreach ($shouldBeInstanced as $key => $instance) {
-                    $this->container()->instance($key, $instance);
-                }
-            }
-
-            $this->profiler()->stop("app.bootstrap: {$bootstrapper}");
-        }
-
-        $this->bootstrapped = true;
-
-        $this->profiler()->stop('app.bootstrap');
-    }
-
-    /**
      * Get application config.
      *
      * @return  ConfigInterface
@@ -327,5 +264,8 @@ class Application implements AppInterface
         return $this->outputMode;
     }
 
+    public function run(): void
+    {
 
+    }
 }
