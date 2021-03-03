@@ -10,19 +10,22 @@
 
 namespace OpxCore\App;
 
+use InvalidArgumentException;
+use OpxCore\App\Interfaces\AppBootstrapperInterface;
 use OpxCore\App\Interfaces\AppInterface;
-use OpxCore\App\Traits\Bootstraps;
+use OpxCore\App\Traits\AppServices;
+use OpxCore\App\Traits\AppUtils;
 use OpxCore\Config\Interfaces\ConfigInterface;
 use OpxCore\Container\Interfaces\ContainerExceptionInterface;
 use OpxCore\Container\Interfaces\ContainerInterface;
 use OpxCore\Container\Interfaces\NotFoundExceptionInterface;
-use OpxCore\ExceptionHandler\Interfaces\ExceptionHandlerInterface;
-use OpxCore\Log\Interfaces\LogManagerInterface;
+use OpxCore\Kernel\Interfaces\KernelInterface;
 use OpxCore\Profiler\Interfaces\ProfilerInterface;
+use OpxCore\Request\Interfaces\RequestInterface;
 
 class Application implements AppInterface
 {
-    use Bootstraps;
+    use  AppServices, AppUtils;
 
     /** @var string Project root path. */
     protected string $basePath;
@@ -90,74 +93,6 @@ class Application implements AppInterface
     }
 
     /**
-     * Get container registered in application.
-     *
-     * @return  ContainerInterface
-     */
-    public function container(): ContainerInterface
-    {
-        return $this->container;
-    }
-
-    /**
-     * Set absolute path for project root.
-     *
-     * @param string $basePath
-     *
-     * @return  void
-     */
-    protected function setBasePath(string $basePath): void
-    {
-        $this->profiler->stop('app.set_base_path');
-
-        $this->basePath = rtrim($basePath, '\/');
-    }
-
-    /**
-     * Get absolute path related to project root.
-     *
-     * @param string|null $to
-     *
-     * @return  string
-     */
-    public function path($to = null): string
-    {
-        $this->profiler->stop('app.get_path');
-
-        return $this->basePath . ($to ? DIRECTORY_SEPARATOR . $to : $to);
-    }
-
-    /**
-     * Weaver the application is in debug mode.
-     *
-     * @return  bool
-     */
-    public function isDebugMode(): bool
-    {
-        return $this->debug;
-    }
-
-    /**
-     * Get exception handler if it was bound.
-     *
-     * @return  ExceptionHandlerInterface|null
-     */
-    public function exceptionHandler(): ?ExceptionHandlerInterface
-    {
-        $this->profiler->start('app.exceptionHandler.resolve');
-
-        if (!$this->container()->has(ExceptionHandlerInterface::class)) {
-            $this->profiler->stop('app.exceptionHandler.resolve');
-            return null;
-        }
-        $handler = $this->container()->make(ExceptionHandlerInterface::class);
-
-        $this->profiler->stop('app.exceptionHandler.resolve');
-
-        return $handler;
-    }
-
-    /**
      * Initialize application dependencies.
      *
      * @return  void
@@ -196,76 +131,104 @@ class Application implements AppInterface
     }
 
     /**
-     * Get application config.
+     * Bootstrap application.
+     * If null passed to $bootstrappers no bootstrapper would be processed.
+     * Default `bootstrappers` or other string value would be used as key
+     * to get bootstrappers list  from application config.
+     * If array passed, it will be used as array of bootstrappers.
      *
-     * @return  ConfigInterface
-     */
-    public function config(): ConfigInterface
-    {
-        $this->profiler()->start('app.config.get');
-
-        $config = $this->container->make('config');
-
-        $this->profiler()->stop('app.config.get');
-
-        return $config;
-    }
-
-    /**
-     * Get profiler proxy with assigned profiler (or not assigned).
+     * @param string|array|null $bootstrappers
      *
-     * @return  ProfilerInterface
+     * @return  void
      */
-    public function profiler(): ProfilerInterface
+    public function bootstrap($bootstrappers = 'bootstrappers'): void
     {
-        return $this->profiler;
-    }
+        $this->profiler()->start('app.bootstrap');
 
-    /**
-     * Get logger.
-     *
-     * @return  LogManagerInterface
-     */
-    public function log(): LogManagerInterface
-    {
-        $this->profiler()->start('app.logger.get');
-
-        // Check for bounded instance of logger in container
-        if ($this->container->has('logger')) {
-            $logger = $this->container->make('logger');
-            $this->profiler()->stop('app.logger.get');
-
-            return $logger;
+        // If null value passed, just mark application bootstrapped. No need other actions.
+        if (is_null($bootstrappers)) {
+            $this->bootstrapped = true;
+            $this->profiler()->stop('app.bootstrap');
+            return;
         }
 
-        // If there is no registered logger resolve it and bind
-        $this->profiler()->start('app.logger.make');
-        $logger = $this->container->make(LogManagerInterface::class);
-        $this->container->instance('logger', $logger);
-        $this->profiler()->stop('app.logger.make');
-        $this->profiler()->stop('app.logger.get');
+        // If string passed, load configuration for given key
+        if (is_string($bootstrappers)) {
+            $bootstrappers = $this->config()->get($bootstrappers, []);
+        }
 
-        return $logger;
+        // Iterate and bootstrap all of bootstrappers
+        foreach ($bootstrappers as $bootstrapper => $dependencies) {
+
+            // Check if bootstrapper was given without dependencies
+            if (is_numeric($bootstrapper)) {
+                $bootstrapper = $dependencies;
+                $dependencies = [];
+            }
+
+            $this->profiler()->start("app.bootstrap: {$bootstrapper}");
+
+            /** @var AppBootstrapperInterface $bootstrapperInstance */
+            $bootstrapperInstance = $this->container()->make($bootstrapper, $dependencies);
+
+            if (!$bootstrapperInstance instanceof AppBootstrapperInterface) {
+                throw new InvalidArgumentException(
+                    'Bootstrapper [' . get_class($bootstrapperInstance)
+                    . '] should be instance of ' . AppBootstrapperInterface::class
+                );
+            }
+
+            $shouldBeInstanced = $bootstrapperInstance->bootstrap($this);
+
+            if ($shouldBeInstanced !== null) {
+                foreach ($shouldBeInstanced as $key => $instance) {
+                    $this->container()->instance($key, $instance);
+                }
+            }
+
+            $this->profiler()->stop("app.bootstrap: {$bootstrapper}");
+        }
+
+        $this->bootstrapped = true;
+
+        $this->profiler()->stop('app.bootstrap');
     }
 
     /**
-     * Get application output mode is to be used.
+     * Perform request capture, transform to response and send.
      *
-     * @param int|null $mode Mode to be set.
+     * @param RequestInterface|null $request
      *
-     * @return  int
+     * @return  void
      */
-    public function outputMode(?int $mode = null): int
+    public function run(?RequestInterface $request = null): void
     {
-        if ($mode !== null) {
-            $this->outputMode = $mode;
-        }
+        // TODO: resolve kernel with global middlewares (bound outside, use singleton)
+         $kernel = $this->container()->make(KernelInterface::class);
 
-        return $this->outputMode;
+        // Create request. It must capture parameters from env with default constructor flag
+        // for http: capture headers, parameters e.t.c.
+        // for console: capture command, parameters and options
+        // or use given.
+         $request = $request ?? $this->container()->make(RequestInterface::class);
+
+        // Process request to response transformation:
+        // 1. send request through global middlewares
+        // 2. match route
+        // 3. send request through route middlewares
+        // 4. send request through controller middlewares
+        // 5. run corresponding controller or command
+        // 6. get response
+         $response = $kernel->handle($request);
+
+        // Perform response sending
+        // for http: send headers, content e.t.c.
+        // for console send exit code
+         $response->send();
     }
 
-    public function run(): void
+    public function terminate(): void
     {
-
+        // run terminators
     }
 }
