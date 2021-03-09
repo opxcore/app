@@ -195,36 +195,61 @@ class Application implements AppInterface
     }
 
     /**
-     * Perform request capture, transform to response and send.
+     * Perform request to response processing and then send it.
      *
      * @param RequestInterface|null $request
      *
      * @return  void
      */
-    public function run(?RequestInterface $request = null): void
+    public function handle(?RequestInterface $request = null): void
     {
-        // TODO: resolve kernel with global middlewares (bound outside, use singleton)
-         $kernel = $this->container()->make(KernelInterface::class);
+        // Make kernel with global middlewares.
+        // Middlewares must be bound outside to be injected here by container.
+        // Note: Use singleton binding for kernel !
+        /** @var KernelInterface $kernel */
+        $kernel = $this->container()->make(KernelInterface::class);
 
-        // Create request. It must capture parameters from env with default constructor flag
-        // for http: capture headers, parameters e.t.c.
-        // for console: capture command, parameters and options
-        // or use given.
-         $request = $request ?? $this->container()->make(RequestInterface::class);
+        // Capture request from globals if it was not passed here.
+        if ($request === null) {
+            /** @var RequestInterface $request */
+            $request = $this->container()->make(RequestInterface::class);
+            $request->capture();
+        }
 
         // Process request to response transformation:
         // 1. send request through global middlewares
         // 2. match route
         // 3. send request through route middlewares
         // 4. send request through controller middlewares
-        // 5. run corresponding controller or command
+        // 5. run corresponding controller method
         // 6. get response
-         $response = $kernel->handle($request);
+        $response = $kernel->handle($request);
 
-        // Perform response sending
-        // for http: send headers, content e.t.c.
-        // for console send exit code
-         $response->send();
+        // Perform response sending (headers, content e.t.c).
+        $response->send();
+    }
+
+    /**
+     * Perform request capture, transform to response and send.
+     *
+     * @param string|CommandInterface $command
+     * @param array $arguments
+     * @param array $options
+     * @param RequestInterface|null $request
+     *
+     * @return  void
+     */
+    public function execute($command, array $arguments = [], array $options = [], ?RequestInterface $request = null): void
+    {
+//        if ($command === null) {
+//            // Capture command from globals
+//        }
+//
+//        if (is_string($command)) {
+//            $command = $this->config()->get("commands.{$command}");
+//        }
+//
+//        $command =
     }
 
     public function terminate(): void
